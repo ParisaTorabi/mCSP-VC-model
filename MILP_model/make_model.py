@@ -27,20 +27,12 @@ def make_model(instance: dict) -> gp.Model:
     M9 = n * instance["ND"]
     M10 = np.max(instance["D"])
     M11 = n * (n - 1)
-    # M12 = instance["theta"]
-
-    # print(f"M variables defined after {time.time()-time_1} seconds ")
-
-    # M = M1 = M2 = M3 = M4 = M5 = M6 = M7 = M8 = M9 = M10 = M11 = M12 = 1000000
+    
     V = set(instance["C"] + [n + 1])
     C = set(instance["C"])
-    # VG = set(instance["CG"] + [instance["n"] + 1])
     K = set(np.arange(1, n))
     A = tuplelist([(i, j) for i in V for j in V if i != j])
-    # AG = tuplelist([(i, j) for i in VG for j in VG if i != j])
-
-    # print(f"Sets defined after {time.time()-time_1} seconds")
-
+    
     # binary variables
     x = m.addVars(A, K, vtype=GRB.BINARY, name="x")
     y = m.addVars(A, vtype=GRB.BINARY, name="y")
@@ -51,7 +43,6 @@ def make_model(instance: dict) -> gp.Model:
     hL = m.addVars(V, K, vtype=GRB.BINARY, name="hL")
     hR = m.addVars(V, K, vtype=GRB.BINARY, name="hR")
 
-    # mt = m.addVar(vtype=GRB.BINARY, name="mt")
     # integer
     d = m.addVars(V, ub=instance["ND"], vtype=GRB.INTEGER, name="d")
 
@@ -65,22 +56,12 @@ def make_model(instance: dict) -> gp.Model:
     r = m.addVars(C, ub=instance["theta"], name="r")
     max_time = m.addVar()
 
-    # print(f"Variables defined after {time.time()-time_1} seconds")
-
-    # m.addConstr(max_time == mt * tGA[n + 1] + (1 - mt) * tDA[n + 1], name="max_time")
-    # m.addConstr(tGA[n + 1] >= tDA[n + 1] - M * (1 - mt), "mt1")
-    # m.addConstr(tGA[n + 1] <= tDA[n + 1] - M * mt, "mt2")
     m.addConstr(max_time >= tGA[n + 1], name="max_time_1")
     m.addConstr(max_time >= tDA[n + 1], name="max_time_2")
     m.setObjective(max_time, GRB.MINIMIZE)
-    #
-    # print(f"Objective function set after {time.time()-time_1} seconds")
 
     m.addConstrs(((gp.quicksum(zD[i, k] for k in K)) + zC[i] + zG[i] == 1 for i in V), name="C2")
 
-    # m.addConstrs(((gp.quicksum(zD[i, k] for k in K)) + zG[i] <= 1 for i in V), name="C2_1")
-
-    # m.addConstrs((zG[i] == 0 for i in instance["CD"]), name="C3")
     m.addConstrs(
         ((gp.quicksum(x[j, i, k] for j in V if (j, i) in A)) >= zD[i, k] for i in V for k in K),
         name="C3",
@@ -88,7 +69,7 @@ def make_model(instance: dict) -> gp.Model:
 
     m.addConstrs((zG[i] == gp.quicksum(y[j, i] for j in V if (j, i) in A) for i in V), name="C4")
 
-    # print(f"Up to C5 set after {time.time()-time_1} seconds")
+
 
     m.addConstrs(
         (
@@ -234,10 +215,6 @@ def make_model(instance: dict) -> gp.Model:
         name="C26",
     )
 
-    # m.addConstrs(
-    #     (tGA[j] <= tGL[i] + instance["TG"][i - 1, j - 1] + M7 * (1 - y[i, j]) for (i, j) in AG),
-    #     name="C32",
-    # )
 
     m.addConstrs((tGL[i] >= tGA[i] - M7 * (1 - zG[i]) for i in C), name="C27")
 
@@ -270,9 +247,6 @@ def make_model(instance: dict) -> gp.Model:
         name="C33",
     )
 
-    # print(f"Up to C39 set after {time.time()-time_1} seconds")
-    # Now the radius!
-
     m.addConstrs(
         (
             r[j]
@@ -284,16 +258,6 @@ def make_model(instance: dict) -> gp.Model:
         name="C34",
     )
 
-    # m.addConstrs(
-    #     (
-    #         r[j]
-    #         >= instance["alpha"] * (tDL[j] - tDA[j])
-    #         + instance["beta"]
-    #         - M12 * (1 - gp.quicksum(zD[j, k] for k in K))
-    #         for j in C
-    #     ),
-    #     name="C41",
-    # )
     m.addConstrs(
         (
             r[j] <= instance["alpha"] * (tGL[j] - tGA[j]) + instance["beta"] + M7 * (1 - zG[j])
@@ -302,13 +266,7 @@ def make_model(instance: dict) -> gp.Model:
         name="C35",
     )
 
-    # m.addConstrs(
-    #     (
-    #         r[j] >= instance["alpha"] * (tGL[j] - tGA[j]) + instance["beta"] - M12 * (1 - zG[j])
-    #         for j in instance["CG"]
-    #     ),
-    #     name="C43",
-    # )
+  
 
     m.addConstrs(
         (
@@ -325,9 +283,7 @@ def make_model(instance: dict) -> gp.Model:
         name="C37",
     )
 
-    # m.addConstrs(
-    #     (r[j] <= M12 * gp.quicksum(s[i, j] for i in V if (i, j) in A) for j in C), name="C46"
-    # )
+
 
     m.addConstrs(
         ((gp.quicksum(s[i, j] for j in C if (i, j) in A)) >= 1 - M11 * (1 - zC[i]) for i in C),
